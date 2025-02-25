@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 
+import clerkAuthHandlers from "./handlers/auth/clerk";
+
 const app = new Hono();
 
-app.get("/", (c) => {
-  return c.json({ message: "Hello World!" });
-});
+app.basePath("/api").route("/auth", clerkAuthHandlers);
 
 export default app;
