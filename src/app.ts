@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import clerkAuthHandlers from "./handlers/auth/clerk";
+import clerkAuthHandlers from "./handlers/auth/clerk.handler";
 
 const app = new Hono();
 
