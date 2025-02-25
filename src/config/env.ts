@@ -9,6 +9,8 @@ const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().min(0).max(65535).default(3000),
   JWT_SECRET_KEY: z.string(),
+  // Database
+  PG_DATABASE_URL: z.string().url(),
   // 3rd party services
   CLERK_SECRET_KEY: z.string(),
   CLERK_PUBLISHABLE_KEY: z.string(),
