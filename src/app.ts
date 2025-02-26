@@ -18,6 +18,7 @@ import {
 
 import authHandlers from "./handlers/auth/auth.handler";
 import userHandlers from "./handlers/users/user.handler";
+import sessionHandlers from "./handlers/sessions/session.handler";
 
 const app = new Hono();
 
@@ -60,6 +61,7 @@ app
   .basePath("/api")
   .route("/auth", authHandlers)
   .route("/users", userHandlers)
+  .route("/sessions", sessionHandlers)
   .all("*", async (c) => {
     return sendNotFound(
       c,
