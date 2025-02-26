@@ -22,6 +22,20 @@
       "when": 1740519782552,
       "tag": "0002_rename_auth_providers_to_user_providers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1740561942841,
+      "tag": "0003_change_active_to_revoked_on_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1740589430556,
+      "tag": "0004_add_password_enabled_to_user_provideres_table",
+      "breakpoints": true
     }
   ]
 }

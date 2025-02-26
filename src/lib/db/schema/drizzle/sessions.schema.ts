@@ -23,7 +23,7 @@ export const sessions = pgTable("sessions", {
     .references(() => users.id, { onDelete: "cascade" }),
   ipAddress: varchar({ length: 45 }).notNull(),
   userAgent: text(),
-  isActive: boolean().default(true).notNull(),
+  isRevoked: boolean().default(false).notNull(),
   lastActiveAt: timestamp().defaultNow().notNull(),
   expiresAt: timestamp().notNull(),
   ...timestamps,

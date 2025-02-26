@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 
 import { timestamps } from "./timestamps";
 import { users } from "./users.schema";
@@ -12,6 +12,7 @@ export const userProviders = pgTable("user_providers", {
     .references(() => users.id, { onDelete: "cascade" }),
   provider: varchar({ length: 255 }).notNull(),
   externalId: varchar().notNull(),
+  passwordEnabled: boolean().notNull(),
   ...timestamps,
 });
 
