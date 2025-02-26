@@ -15,13 +15,13 @@ export const errors = {
 };
 
 export function sendOk<Data>(c: Context, data?: Data): Response {
-  return c.json(data ?? null, 200, {
+  return c.body(JSON.stringify(data), 200, {
     "Content-Type": "application/json",
   });
 }
 
 export function sendCreated<Data = never>(c: Context, data?: Data): Response {
-  return c.json(data ?? null, 201, {
+  return c.body(JSON.stringify(data), 201, {
     "Content-Type": "application/json",
   });
 }
