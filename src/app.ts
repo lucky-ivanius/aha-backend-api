@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { requestId } from "hono/request-id";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { HTTPResponseError } from "hono/types";
 import { prettyJSON } from "hono/pretty-json";
@@ -15,6 +16,8 @@ import {
   sendUnauthorized,
   sendUnexpected,
 } from "./utils/response";
+
+import { AHA_REQUEST_ID } from "./config/consts";
 
 import authHandlers from "./handlers/auth/auth.handler";
 import userHandlers from "./handlers/users/user.handler";
@@ -32,6 +35,11 @@ app
   .use(
     cors({
       origin: "*",
+    }),
+  )
+  .use(
+    requestId({
+      headerName: AHA_REQUEST_ID,
     }),
   )
   .use(prettyJSON())
