@@ -31,7 +31,6 @@ userHandlers
     const userList = await c.var.db
       .select({
         id: users.id,
-        email: users.email,
         name: users.name,
         signUpDate: users.createdAt,
         loggedInTotal: count(sessions.id),
