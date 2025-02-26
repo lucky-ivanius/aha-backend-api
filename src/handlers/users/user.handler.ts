@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, desc, eq, gte, max } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
@@ -27,6 +27,80 @@ const { users, sessions, userProviders } = schema;
 const userHandlers = new Hono();
 
 userHandlers
+  .get("/", sessionCookieMiddleware(), async (c) => {
+    const userList = await c.var.db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        signUpDate: users.createdAt,
+        loggedInTotal: count(sessions.id),
+        lastLoginDate: max(sessions.lastActiveAt),
+      })
+      .from(users)
+      .leftJoin(sessions, eq(sessions.userId, users.id))
+      .groupBy(users.id)
+      .orderBy(desc(users.createdAt));
+
+    return sendOk(c, userList);
+  })
+  .get("/stats", sessionCookieMiddleware(), async (c) => {
+    const now = new Date();
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
+    const { userSignUp, todaysActiveSession, average7dActiveUsers } =
+      await c.var.db.transaction(async (tx) => {
+        const [userSignUp] = await tx
+          .select({
+            total: count(users.id),
+          })
+          .from(users);
+
+        const [todaysActiveSession] = await tx
+          .select({
+            total: count(sessions.id),
+          })
+          .from(sessions)
+          .where(
+            and(
+              eq(sessions.isRevoked, false),
+              gte(sessions.expiresAt, now),
+              gte(sessions.createdAt, startOfToday),
+            ),
+          );
+
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        const [average7dActiveUsers] = await tx
+          .select({
+            average: count(sessions.id),
+          })
+          .from(sessions)
+          .where(
+            and(
+              eq(sessions.isRevoked, false),
+              gte(sessions.expiresAt, now),
+              gte(sessions.createdAt, sevenDaysAgo),
+            ),
+          );
+
+        return {
+          userSignUp: userSignUp.total,
+          todaysActiveSession: todaysActiveSession.total,
+          average7dActiveUsers: +(average7dActiveUsers.average / 7).toFixed(2),
+        };
+      });
+
+    return sendOk(c, {
+      userSignUp,
+      todaysActiveSession,
+      average7dActiveUsers,
+    });
+  })
   .get("/me", sessionCookieMiddleware(), async (c) => {
     const userId = c.get("userId");
     if (!userId) return sendUnauthorized(c);
@@ -70,7 +144,7 @@ userHandlers
       }
     },
   )
-  .get("/me/password-setup", sessionCookieMiddleware(), async (c) => {
+  .get("/password-setup", sessionCookieMiddleware(), async (c) => {
     const userId = c.get("userId");
     if (!userId) return sendUnauthorized(c);
 
@@ -98,7 +172,7 @@ userHandlers
     });
   })
   .post(
-    "/me/set-password",
+    "/set-password",
     sessionCookieMiddleware(),
     validator("json", zodSchemaValidator(setPasswordSchema)),
     async (c) => {
@@ -150,7 +224,7 @@ userHandlers
     },
   )
   .post(
-    "/me/change-password",
+    "/change-password",
     sessionCookieMiddleware(),
     validator("json", zodSchemaValidator(changePasswordSchema)),
     async (c) => {
