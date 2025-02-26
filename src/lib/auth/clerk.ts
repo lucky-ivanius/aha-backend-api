@@ -25,7 +25,11 @@ const verifyClerkToken = async (token: string) => {
 
     if (azp && !env.CLERK_AUTHORIZED_PARTIES.includes(azp)) return null;
 
-    return sub ?? null;
+    if (!sub) return null;
+
+    return {
+      userId: sub,
+    };
   } catch (_error) {
     return null;
   }

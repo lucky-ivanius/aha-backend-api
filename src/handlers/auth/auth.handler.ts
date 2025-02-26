@@ -36,9 +36,11 @@ authHandlers.post(
     const connInfo = getConnInfo(c);
 
     try {
-      const externalId = await c.var.authProvider.verifyToken(token);
-      if (!externalId)
+      const payload = await c.var.authProvider.verifyToken(token);
+      if (!payload)
         return sendUnauthorized(c, errors.UNAUTHORIZED_ERROR, "Invalid token");
+
+      const { userId: externalUserId } = payload;
 
       const [existingUser] = await c.var.db
         .select({
@@ -49,7 +51,7 @@ authHandlers.post(
         .where(
           and(
             eq(userProviders.provider, c.var.authProvider.name),
-            eq(userProviders.externalId, externalId),
+            eq(userProviders.externalId, externalUserId),
           ),
         );
 
@@ -57,7 +59,7 @@ authHandlers.post(
 
       if (!existingUser) {
         const providerUser =
-          await c.var.authProvider.getProviderUser(externalId);
+          await c.var.authProvider.getProviderUser(externalUserId);
         if (!providerUser)
           return sendUnauthorized(
             c,
