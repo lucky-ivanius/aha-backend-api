@@ -1,5 +1,5 @@
 CREATE TABLE "sessions" (
-	"id" varchar PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"ip_address" varchar(45) NOT NULL,
 	"user_agent" text,
