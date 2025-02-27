@@ -12,6 +12,7 @@ import {
   SESSION_TOKEN_EXPIRED,
   SESSION_TOKEN_NOT_PROVIDED,
 } from "../config/consts";
+import { validate } from "uuid";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -29,11 +30,19 @@ export const sessionCookieMiddleware = <
 >() =>
   createMiddleware<E, P, I>(async (c, next) => {
     const sessionId = getSessionCookie(c);
+
     if (!sessionId)
       return sendUnauthorized(
         c,
         SESSION_TOKEN_NOT_PROVIDED,
         "No session token provided",
+      );
+
+    if (!validate(sessionId))
+      return sendUnauthorized(
+        c,
+        INVALID_SESSION_TOKEN,
+        "Invalid session token",
       );
 
     try {
