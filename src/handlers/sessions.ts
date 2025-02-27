@@ -46,7 +46,15 @@ sessionHandlers
         )
         .orderBy(desc(sessions.lastActiveAt));
 
-      return sendOk(c, activeSessions);
+      return sendOk(
+        c,
+        activeSessions.map((session) => ({
+          ...session,
+          lastActiveAt: +session.lastActiveAt,
+          loginDate: +session.loginDate,
+          expiresAt: +session.expiresAt,
+        })),
+      );
     } catch (error) {
       attachRequestId(c.get("requestId")).error((error as Error).message);
       return sendUnexpected(c);

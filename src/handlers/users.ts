@@ -34,16 +34,25 @@ userHandlers
         .select({
           id: users.id,
           name: users.name,
-          signUpDate: users.createdAt,
-          loggedInTotal: count(sessions.id),
-          lastLoginDate: max(sessions.lastActiveAt),
+          registrationDate: users.createdAt,
+          totalLoginCount: count(sessions.id),
+          lastActiveTimestamp: max(sessions.lastActiveAt),
         })
         .from(users)
         .leftJoin(sessions, eq(sessions.userId, users.id))
         .groupBy(users.id)
         .orderBy(desc(users.createdAt));
 
-      return sendOk(c, userList);
+      return sendOk(
+        c,
+        userList.map((user) => ({
+          ...user,
+          lastActiveTimestamp: user.lastActiveTimestamp
+            ? +user.lastActiveTimestamp
+            : null,
+          registrationDate: +user.registrationDate,
+        })),
+      );
     } catch (error) {
       attachRequestId(c.get("requestId")).error((error as Error).message);
       return sendUnexpected(c);
