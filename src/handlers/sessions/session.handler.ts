@@ -5,6 +5,7 @@ import schema from "../../lib/db/schema/drizzle";
 
 import { sessionCookieMiddleware } from "../../middlewares/auth.middleware";
 
+import { attachRequestId } from "../../utils/logger";
 import {
   errors,
   sendBadRequest,
@@ -12,6 +13,7 @@ import {
   sendNotFound,
   sendOk,
   sendUnauthorized,
+  sendUnexpected,
 } from "../../utils/response";
 
 const { sessions } = schema;
@@ -23,27 +25,32 @@ sessionHandlers
     const userId = c.get("userId");
     if (!userId) return sendUnauthorized(c);
 
-    const activeSessions = await c.var.db
-      .select({
-        id: sessions.id,
-        ipAddress: sessions.ipAddress,
-        userAgent: sessions.userAgent,
-        lastActiveAt: sessions.lastActiveAt,
-        loginDate: sessions.createdAt,
-        expiresAt: sessions.expiresAt,
-        isRevoked: sessions.isRevoked,
-      })
-      .from(sessions)
-      .where(
-        and(
-          eq(sessions.userId, userId),
-          eq(sessions.isRevoked, false),
-          gte(sessions.expiresAt, new Date()),
-        ),
-      )
-      .orderBy(desc(sessions.lastActiveAt));
+    try {
+      const activeSessions = await c.var.db
+        .select({
+          id: sessions.id,
+          ipAddress: sessions.ipAddress,
+          userAgent: sessions.userAgent,
+          lastActiveAt: sessions.lastActiveAt,
+          loginDate: sessions.createdAt,
+          expiresAt: sessions.expiresAt,
+          isRevoked: sessions.isRevoked,
+        })
+        .from(sessions)
+        .where(
+          and(
+            eq(sessions.userId, userId),
+            eq(sessions.isRevoked, false),
+            gte(sessions.expiresAt, new Date()),
+          ),
+        )
+        .orderBy(desc(sessions.lastActiveAt));
 
-    return sendOk(c, activeSessions);
+      return sendOk(c, activeSessions);
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
+      return sendUnexpected(c);
+    }
   })
   .delete("/:sessionId", sessionCookieMiddleware(), async (c) => {
     const userId = c.get("userId");
@@ -80,7 +87,8 @@ sessionHandlers
       if (!session) return sendNotFound(c);
 
       return sendNoContent(c);
-    } catch (_error) {
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
       return sendUnauthorized(c);
     }
   });

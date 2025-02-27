@@ -5,6 +5,8 @@ import { validator } from "hono/validator";
 import schema from "../../lib/db/schema/drizzle";
 
 import { sessionCookieMiddleware } from "../../middlewares/auth.middleware";
+
+import { attachRequestId } from "../../utils/logger";
 import {
   errors,
   sendBadRequest,
@@ -28,20 +30,25 @@ const userHandlers = new Hono();
 
 userHandlers
   .get("/", sessionCookieMiddleware(), async (c) => {
-    const userList = await c.var.db
-      .select({
-        id: users.id,
-        name: users.name,
-        signUpDate: users.createdAt,
-        loggedInTotal: count(sessions.id),
-        lastLoginDate: max(sessions.lastActiveAt),
-      })
-      .from(users)
-      .leftJoin(sessions, eq(sessions.userId, users.id))
-      .groupBy(users.id)
-      .orderBy(desc(users.createdAt));
+    try {
+      const userList = await c.var.db
+        .select({
+          id: users.id,
+          name: users.name,
+          signUpDate: users.createdAt,
+          loggedInTotal: count(sessions.id),
+          lastLoginDate: max(sessions.lastActiveAt),
+        })
+        .from(users)
+        .leftJoin(sessions, eq(sessions.userId, users.id))
+        .groupBy(users.id)
+        .orderBy(desc(users.createdAt));
 
-    return sendOk(c, userList);
+      return sendOk(c, userList);
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
+      return sendUnexpected(c);
+    }
   })
   .get("/stats", sessionCookieMiddleware(), async (c) => {
     const now = new Date();
@@ -51,54 +58,63 @@ userHandlers
       now.getDate(),
     );
 
-    const { userSignUp, todaysActiveSession, average7dActiveUsers } =
-      await c.var.db.transaction(async (tx) => {
-        const [userSignUp] = await tx
-          .select({
-            total: count(users.id),
-          })
-          .from(users);
+    try {
+      const { userSignUp, todaysActiveSession, average7dActiveUsers } =
+        await c.var.db.transaction(async (tx) => {
+          const [userSignUp] = await tx
+            .select({
+              total: count(users.id),
+            })
+            .from(users);
 
-        const [todaysActiveSession] = await tx
-          .select({
-            total: count(sessions.id),
-          })
-          .from(sessions)
-          .where(
-            and(
-              eq(sessions.isRevoked, false),
-              gte(sessions.expiresAt, now),
-              gte(sessions.createdAt, startOfToday),
-            ),
+          const [todaysActiveSession] = await tx
+            .select({
+              total: count(sessions.id),
+            })
+            .from(sessions)
+            .where(
+              and(
+                eq(sessions.isRevoked, false),
+                gte(sessions.expiresAt, now),
+                gte(sessions.createdAt, startOfToday),
+              ),
+            );
+
+          const sevenDaysAgo = new Date(
+            now.getTime() - 7 * 24 * 60 * 60 * 1000,
           );
 
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          const [average7dActiveUsers] = await tx
+            .select({
+              average: count(sessions.id),
+            })
+            .from(sessions)
+            .where(
+              and(
+                eq(sessions.isRevoked, false),
+                gte(sessions.expiresAt, now),
+                gte(sessions.createdAt, sevenDaysAgo),
+              ),
+            );
 
-        const [average7dActiveUsers] = await tx
-          .select({
-            average: count(sessions.id),
-          })
-          .from(sessions)
-          .where(
-            and(
-              eq(sessions.isRevoked, false),
-              gte(sessions.expiresAt, now),
-              gte(sessions.createdAt, sevenDaysAgo),
+          return {
+            userSignUp: userSignUp.total,
+            todaysActiveSession: todaysActiveSession.total,
+            average7dActiveUsers: +(average7dActiveUsers.average / 7).toFixed(
+              2,
             ),
-          );
+          };
+        });
 
-        return {
-          userSignUp: userSignUp.total,
-          todaysActiveSession: todaysActiveSession.total,
-          average7dActiveUsers: +(average7dActiveUsers.average / 7).toFixed(2),
-        };
+      return sendOk(c, {
+        userSignUp,
+        todaysActiveSession,
+        average7dActiveUsers,
       });
-
-    return sendOk(c, {
-      userSignUp,
-      todaysActiveSession,
-      average7dActiveUsers,
-    });
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
+      return sendUnexpected(c);
+    }
   })
   .get("/me", sessionCookieMiddleware(), async (c) => {
     const userId = c.get("userId");
@@ -115,7 +131,8 @@ userHandlers
         .where(eq(users.id, userId));
 
       return sendOk(c, user);
-    } catch (_error) {
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
       return sendUnexpected(c);
     }
   })
@@ -138,7 +155,8 @@ userHandlers
           .where(eq(users.id, userId));
 
         return sendOk(c);
-      } catch (_error) {
+      } catch (error) {
+        attachRequestId(c.get("requestId")).error((error as Error).message);
         return sendUnexpected(c);
       }
     },
@@ -155,20 +173,28 @@ userHandlers
         passwordEnabled: false,
       });
 
-    const [userProvider] = await c.var.db
-      .select({
-        passwordEnabled: userProviders.passwordEnabled,
-      })
-      .from(userProviders)
-      .where(
-        and(eq(userProviders.userId, userId), eq(userProviders.provider, name)),
-      );
-    if (!userProvider) return sendUnauthorized(c);
+    try {
+      const [userProvider] = await c.var.db
+        .select({
+          passwordEnabled: userProviders.passwordEnabled,
+        })
+        .from(userProviders)
+        .where(
+          and(
+            eq(userProviders.userId, userId),
+            eq(userProviders.provider, name),
+          ),
+        );
+      if (!userProvider) return sendUnauthorized(c);
 
-    return sendOk(c, {
-      allowPassword,
-      passwordEnabled: userProvider.passwordEnabled,
-    });
+      return sendOk(c, {
+        allowPassword,
+        passwordEnabled: userProvider.passwordEnabled,
+      });
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
+      return sendUnexpected(c);
+    }
   })
   .post(
     "/set-password",
@@ -217,7 +243,8 @@ userHandlers
         );
 
         return sendOk(c);
-      } catch (_error) {
+      } catch (error) {
+        attachRequestId(c.get("requestId")).error((error as Error).message);
         return sendUnexpected(c);
       }
     },
@@ -275,7 +302,8 @@ userHandlers
         );
 
         return sendOk(c);
-      } catch (_error) {
+      } catch (error) {
+        attachRequestId(c.get("requestId")).error((error as Error).message);
         return sendUnexpected(c);
       }
     },
@@ -295,7 +323,8 @@ userHandlers
       deleteSessionCookie(c);
 
       return sendOk(c);
-    } catch (_error) {
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
       return sendUnexpected(c);
     }
   });

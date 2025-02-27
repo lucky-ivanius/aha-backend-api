@@ -5,6 +5,7 @@ import { validator } from "hono/validator";
 
 import schema from "../../lib/db/schema/drizzle";
 
+import { attachRequestId } from "../../utils/logger";
 import {
   errors,
   sendOk,
@@ -147,7 +148,8 @@ authHandlers.post(
       setSessionCookie(c, session.id);
 
       return sendOk(c, { userId: existingUser.id, sessionToken: session.id });
-    } catch (_error) {
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
       return sendUnexpected(c);
     }
   },
