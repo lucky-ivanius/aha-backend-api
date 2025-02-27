@@ -15,7 +15,6 @@ import {
   sendUnauthorized,
   sendUnexpected,
 } from "../utils/response";
-import { deleteSessionCookie } from "../utils/sessions";
 import { zodSchemaValidator } from "../utils/validator";
 
 import {
@@ -50,6 +49,51 @@ userHandlers
       return sendUnexpected(c);
     }
   })
+  .get("/me", sessionCookieMiddleware(), async (c) => {
+    const userId = c.get("userId");
+    if (!userId) return sendUnauthorized(c);
+
+    try {
+      const [user] = await c.var.db
+        .select({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(eq(users.id, userId));
+
+      return sendOk(c, user);
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
+      return sendUnexpected(c);
+    }
+  })
+  .patch(
+    "/me",
+    sessionCookieMiddleware(),
+    validator("json", zodSchemaValidator(updateUserSchema)),
+    async (c) => {
+      const userId = c.get("userId");
+      if (!userId) return sendUnauthorized(c);
+
+      const { name } = c.req.valid("json");
+
+      try {
+        await c.var.db
+          .update(users)
+          .set({
+            name,
+          })
+          .where(eq(users.id, userId));
+
+        return sendOk(c);
+      } catch (error) {
+        attachRequestId(c.get("requestId")).error((error as Error).message);
+        return sendUnexpected(c);
+      }
+    },
+  )
   .get("/stats", sessionCookieMiddleware(), async (c) => {
     const now = new Date();
     const startOfToday = new Date(
@@ -116,52 +160,8 @@ userHandlers
       return sendUnexpected(c);
     }
   })
-  .get("/me", sessionCookieMiddleware(), async (c) => {
-    const userId = c.get("userId");
-    if (!userId) return sendUnauthorized(c);
-
-    try {
-      const [user] = await c.var.db
-        .select({
-          id: users.id,
-          email: users.email,
-          name: users.name,
-        })
-        .from(users)
-        .where(eq(users.id, userId));
-
-      return sendOk(c, user);
-    } catch (error) {
-      attachRequestId(c.get("requestId")).error((error as Error).message);
-      return sendUnexpected(c);
-    }
-  })
-  .patch(
-    "/me",
-    sessionCookieMiddleware(),
-    validator("json", zodSchemaValidator(updateUserSchema)),
-    async (c) => {
-      const userId = c.get("userId");
-      if (!userId) return sendUnauthorized(c);
-
-      const { name } = c.req.valid("json");
-
-      try {
-        await c.var.db
-          .update(users)
-          .set({
-            name,
-          })
-          .where(eq(users.id, userId));
-
-        return sendOk(c);
-      } catch (error) {
-        attachRequestId(c.get("requestId")).error((error as Error).message);
-        return sendUnexpected(c);
-      }
-    },
-  )
-  .get("/password-setup", sessionCookieMiddleware(), async (c) => {
+  // Password
+  .get("/password", sessionCookieMiddleware(), async (c) => {
     const userId = c.get("userId");
     if (!userId) return sendUnauthorized(c);
 
@@ -197,7 +197,7 @@ userHandlers
     }
   })
   .post(
-    "/set-password",
+    "/password",
     sessionCookieMiddleware(),
     validator("json", zodSchemaValidator(setPasswordSchema)),
     async (c) => {
@@ -249,8 +249,8 @@ userHandlers
       }
     },
   )
-  .post(
-    "/change-password",
+  .put(
+    "/password",
     sessionCookieMiddleware(),
     validator("json", zodSchemaValidator(changePasswordSchema)),
     async (c) => {
@@ -307,26 +307,6 @@ userHandlers
         return sendUnexpected(c);
       }
     },
-  )
-  .post("/logout", sessionCookieMiddleware(), async (c) => {
-    const sessionId = c.get("sessionId");
-    if (!sessionId) return sendUnauthorized(c);
-
-    try {
-      await c.var.db
-        .update(sessions)
-        .set({
-          isRevoked: true,
-        })
-        .where(eq(sessions.id, sessionId));
-
-      deleteSessionCookie(c);
-
-      return sendOk(c);
-    } catch (error) {
-      attachRequestId(c.get("requestId")).error((error as Error).message);
-      return sendUnexpected(c);
-    }
-  });
+  );
 
 export default userHandlers;
