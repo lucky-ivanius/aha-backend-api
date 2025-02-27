@@ -22,11 +22,11 @@ import {
   sendUnexpected,
 } from "./utils/response";
 
-import { loggerMiddleware } from "./middlewares/logger.middleware";
+import { loggerMiddleware } from "./middlewares/logger";
 
-import authHandlers from "./handlers/auth/auth.handler";
-import sessionHandlers from "./handlers/sessions/session.handler";
-import userHandlers from "./handlers/users/user.handler";
+import authHandlers from "./handlers/auth";
+import sessionHandlers from "./handlers/sessions";
+import userHandlers from "./handlers/users";
 
 const app = new Hono();
 

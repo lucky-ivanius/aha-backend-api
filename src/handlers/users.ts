@@ -2,11 +2,11 @@ import { and, count, desc, eq, gte, max } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
-import schema from "../../lib/db/schema/drizzle";
+import schema from "../lib/db/schema/drizzle";
 
-import { sessionCookieMiddleware } from "../../middlewares/auth.middleware";
+import { sessionCookieMiddleware } from "../middlewares/auth";
 
-import { attachRequestId } from "../../utils/logger";
+import { attachRequestId } from "../utils/logger";
 import {
   errors,
   sendBadRequest,
@@ -14,15 +14,15 @@ import {
   sendOk,
   sendUnauthorized,
   sendUnexpected,
-} from "../../utils/response";
-import { deleteSessionCookie } from "../../utils/sessions";
-import { zodSchemaValidator } from "../../utils/validator";
+} from "../utils/response";
+import { deleteSessionCookie } from "../utils/sessions";
+import { zodSchemaValidator } from "../utils/validator";
 
 import {
   changePasswordSchema,
   setPasswordSchema,
   updateUserSchema,
-} from "../../validations/users";
+} from "../validations/users";
 
 const { users, sessions, userProviders } = schema;
 

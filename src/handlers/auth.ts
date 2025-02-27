@@ -3,20 +3,20 @@ import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
-import schema from "../../lib/db/schema/drizzle";
+import schema from "../lib/db/schema/drizzle";
 
-import { attachRequestId } from "../../utils/logger";
+import { attachRequestId } from "../utils/logger";
 import {
   errors,
   sendOk,
   sendUnauthorized,
   sendUnexpected,
-} from "../../utils/response";
-import { setSessionCookie } from "../../utils/sessions";
-import { zodSchemaValidator } from "../../utils/validator";
+} from "../utils/response";
+import { setSessionCookie } from "../utils/sessions";
+import { zodSchemaValidator } from "../utils/validator";
 
-import { AuthProvider } from "../../interfaces/auth-provider";
-import { bearerAuthHeaderSchema } from "../../validations/auth";
+import { AuthProvider } from "../interfaces/auth-provider";
+import { bearerAuthHeaderSchema } from "../validations/auth";
 
 declare module "hono" {
   interface ContextVariableMap {

@@ -10,7 +10,7 @@ import {
 
 import { generateRandomHex } from "../../../token/hex";
 
-import { users } from "./users.schema";
+import { users } from "./users";
 import { timestamps } from "./timestamps";
 
 // Table

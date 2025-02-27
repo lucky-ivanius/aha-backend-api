@@ -1,11 +1,11 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { Hono } from "hono";
 
-import schema from "../../lib/db/schema/drizzle";
+import schema from "../lib/db/schema/drizzle";
 
-import { sessionCookieMiddleware } from "../../middlewares/auth.middleware";
+import { sessionCookieMiddleware } from "../middlewares/auth";
 
-import { attachRequestId } from "../../utils/logger";
+import { attachRequestId } from "../utils/logger";
 import {
   errors,
   sendBadRequest,
@@ -14,7 +14,7 @@ import {
   sendOk,
   sendUnauthorized,
   sendUnexpected,
-} from "../../utils/response";
+} from "../utils/response";
 
 const { sessions } = schema;
 

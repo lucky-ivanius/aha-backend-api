@@ -1,9 +1,9 @@
 import { relations } from "drizzle-orm";
 import { pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 
-import { sessions } from "./sessions.schema";
+import { sessions } from "./sessions";
 import { timestamps } from "./timestamps";
-import { userProviders } from "./user-provider.schema";
+import { userProviders } from "./user-provider";
 
 // Table
 export const users = pgTable("users", {
