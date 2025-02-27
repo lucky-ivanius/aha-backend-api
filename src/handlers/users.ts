@@ -2,13 +2,17 @@ import { and, count, desc, eq, gte, max } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
+import {
+  INVALID_CURRENT_PASSWORD,
+  PASSWORD_HAS_ALREADY_BEEN_SET,
+  PASSWORD_UPDATE_NOT_ALLOWED,
+} from "../config/consts";
 import schema from "../lib/db/schema/drizzle";
 
 import { sessionCookieMiddleware } from "../middlewares/auth";
 
 import { attachRequestId } from "../utils/logger";
 import {
-  errors,
   sendBadRequest,
   sendForbidden,
   sendOk,
@@ -160,9 +164,9 @@ userHandlers
         });
 
       return sendOk(c, {
-        userSignUp,
-        todaysActiveSession,
-        average7dActiveUsers,
+        userSignUp: userSignUp ?? 0,
+        todaysActiveSession: todaysActiveSession ?? 0,
+        average7dActiveUsers: average7dActiveUsers ?? 0,
       });
     } catch (error) {
       attachRequestId(c.get("requestId")).error((error as Error).message);
@@ -218,7 +222,7 @@ userHandlers
       if (!allowPassword)
         return sendForbidden(
           c,
-          errors.FORBIDDEN_ERROR,
+          PASSWORD_UPDATE_NOT_ALLOWED,
           "Password update is not allowed",
         );
 
@@ -242,7 +246,7 @@ userHandlers
         if (userProvider.passwordEnabled)
           return sendBadRequest(
             c,
-            errors.BAD_REQUEST_ERROR,
+            PASSWORD_HAS_ALREADY_BEEN_SET,
             "Password has already been set",
           );
 
@@ -271,7 +275,7 @@ userHandlers
       if (!allowPassword)
         return sendForbidden(
           c,
-          errors.FORBIDDEN_ERROR,
+          PASSWORD_UPDATE_NOT_ALLOWED,
           "Password update is not allowed",
         );
 
@@ -301,7 +305,7 @@ userHandlers
         if (!isValidPassword)
           return sendBadRequest(
             c,
-            errors.BAD_REQUEST_ERROR,
+            INVALID_CURRENT_PASSWORD,
             "Current password is invalid",
           );
 

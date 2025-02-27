@@ -1,13 +1,17 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { Hono } from "hono";
 
+import {
+  SESSION_NOT_FOUND,
+  UNABLE_TO_REVOKE_CURRENT_SESSION,
+} from "../config/consts";
+
 import schema from "../lib/db/schema/drizzle";
 
 import { sessionCookieMiddleware } from "../middlewares/auth";
 
 import { attachRequestId } from "../utils/logger";
 import {
-  errors,
   sendBadRequest,
   sendNoContent,
   sendNotFound,
@@ -65,14 +69,13 @@ sessionHandlers
     if (!userId) return sendUnauthorized(c);
 
     const sessionId = c.req.param("sessionId");
-    if (!sessionId) return sendUnauthorized(c);
 
     const currentSessionId = c.get("sessionId");
     if (sessionId === currentSessionId)
       return sendBadRequest(
         c,
-        errors.BAD_REQUEST_ERROR,
-        "Unable to revoke current session, use /logout instead",
+        UNABLE_TO_REVOKE_CURRENT_SESSION,
+        "Unable to revoke current session, use /auth/signout instead",
       );
 
     try {
@@ -92,7 +95,12 @@ sessionHandlers
             gte(sessions.expiresAt, new Date()),
           ),
         );
-      if (!session) return sendNotFound(c);
+      if (!session)
+        return sendNotFound(
+          c,
+          SESSION_NOT_FOUND,
+          `Session with id: ${sessionId} was not found`,
+        );
 
       return sendNoContent(c);
     } catch (error) {

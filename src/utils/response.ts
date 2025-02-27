@@ -42,7 +42,7 @@ function errorResponse(
 export function sendBadRequest(
   c: Context,
   error: string = errors.BAD_REQUEST_ERROR,
-  message?: string,
+  message: string = "Bad request",
 ): Response {
   return errorResponse(c, 400, error, message);
 }
@@ -50,7 +50,7 @@ export function sendBadRequest(
 export function sendUnauthorized(
   c: Context,
   error: string = errors.UNAUTHORIZED_ERROR,
-  message?: string,
+  message: string = "Unauthorized access",
 ): Response {
   return errorResponse(c, 401, error, message);
 }
@@ -58,7 +58,7 @@ export function sendUnauthorized(
 export function sendForbidden(
   c: Context,
   error: string = errors.FORBIDDEN_ERROR,
-  message?: string,
+  message: string = "Forbidden",
 ): Response {
   return errorResponse(c, 403, error, message);
 }
@@ -66,7 +66,7 @@ export function sendForbidden(
 export function sendNotFound(
   c: Context,
   error: string = errors.NOT_FOUND_ERROR,
-  message?: string,
+  message: string = "Resource not found",
 ): Response {
   return errorResponse(c, 404, error, message);
 }
@@ -74,11 +74,16 @@ export function sendNotFound(
 export function sendTooManyRequests(
   c: Context,
   error: string = errors.TOO_MANY_REQUESTS_ERROR,
-  message?: string,
+  message: string = "Too many requests",
 ): Response {
   return errorResponse(c, 429, error, message);
 }
 
 export function sendUnexpected(c: Context): Response {
-  return errorResponse(c, 500, errors.UNEXPECTED_ERROR);
+  return errorResponse(
+    c,
+    500,
+    errors.UNEXPECTED_ERROR,
+    "Unexpected error occured",
+  );
 }

@@ -3,13 +3,16 @@ import { and, asc, eq, gte } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
+import {
+  INVALID_AUTH_TOKEN,
+  SESSION_TOKEN_NOT_PROVIDED,
+} from "../config/consts";
 import env from "../config/env";
 
 import schema from "../lib/db/schema/drizzle";
 
 import { attachRequestId } from "../utils/logger";
 import {
-  errors,
   sendNoContent,
   sendOk,
   sendUnauthorized,
@@ -47,8 +50,8 @@ authHandlers
         if (!payload)
           return sendUnauthorized(
             c,
-            errors.UNAUTHORIZED_ERROR,
-            "Invalid token",
+            INVALID_AUTH_TOKEN,
+            "Invalid or expired authentication token",
           );
 
         const { userId: externalUserId } = payload;
@@ -74,8 +77,8 @@ authHandlers
           if (!providerUser)
             return sendUnauthorized(
               c,
-              errors.UNAUTHORIZED_ERROR,
-              "Invalid token",
+              INVALID_AUTH_TOKEN,
+              "Invalid authentication token",
             );
 
           const { createdUser, createdSession } = await c.var.db.transaction(
@@ -244,7 +247,15 @@ authHandlers
   )
   .post("/signout", sessionCookieMiddleware(), async (c) => {
     const sessionId = c.get("sessionId");
-    if (!sessionId) return sendUnauthorized(c);
+    if (!sessionId) {
+      deleteSessionCookie(c);
+
+      return sendUnauthorized(
+        c,
+        SESSION_TOKEN_NOT_PROVIDED,
+        "No session token provided",
+      );
+    }
 
     try {
       await c.var.db

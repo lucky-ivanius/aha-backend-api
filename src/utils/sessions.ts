@@ -23,5 +23,5 @@ export const setSessionCookie = (
 };
 
 export const deleteSessionCookie = (c: Context) => {
-  return deleteCookie(c, SESSION_COOKIE_NAME);
+  deleteCookie(c, SESSION_COOKIE_NAME);
 };

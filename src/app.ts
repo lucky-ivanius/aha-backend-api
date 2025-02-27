@@ -47,7 +47,6 @@ app
       headerName: AHA_REQUEST_ID,
     }),
   )
-  .use(loggerMiddleware())
   .use(secureHeaders())
   .use(prettyJSON())
   .use(trimTrailingSlash())
@@ -57,6 +56,7 @@ app
 
     return next();
   })
+  .use(loggerMiddleware())
   .onError((err, c) => {
     const logger = attachRequestId(c.get("requestId"));
     const httpResponseError = (err as HTTPResponseError).getResponse?.();

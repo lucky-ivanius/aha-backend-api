@@ -4,8 +4,14 @@ import { createMiddleware } from "hono/factory";
 
 import schema from "../lib/db/schema/drizzle";
 
-import { sendUnauthorized } from "../utils/response";
+import { sendUnauthorized, sendUnexpected } from "../utils/response";
 import { deleteSessionCookie, getSessionCookie } from "../utils/sessions";
+import { attachRequestId } from "../utils/logger";
+import {
+  INVALID_SESSION_TOKEN,
+  SESSION_TOKEN_EXPIRED,
+  SESSION_TOKEN_NOT_PROVIDED,
+} from "../config/consts";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -23,36 +29,55 @@ export const sessionCookieMiddleware = <
 >() =>
   createMiddleware<E, P, I>(async (c, next) => {
     const sessionId = getSessionCookie(c);
+    if (!sessionId)
+      return sendUnauthorized(
+        c,
+        SESSION_TOKEN_NOT_PROVIDED,
+        "No session token provided",
+      );
 
-    if (!sessionId) return sendUnauthorized(c);
-
-    const userId = await c.var.db.transaction(async (tx) => {
-      const [session] = await tx
+    try {
+      const [session] = await c.var.db
         .select({
           userId: sessions.userId,
           expiresAt: sessions.expiresAt,
         })
         .from(sessions)
         .where(and(eq(sessions.id, sessionId), eq(sessions.isRevoked, false)));
-      if (!session || session.expiresAt < new Date()) {
+
+      if (!session) {
         deleteSessionCookie(c);
 
-        return null;
+        return sendUnauthorized(
+          c,
+          INVALID_SESSION_TOKEN,
+          "Invalid session token",
+        );
       }
 
-      await tx
+      if (session.expiresAt < new Date()) {
+        deleteSessionCookie(c);
+
+        return sendUnauthorized(
+          c,
+          SESSION_TOKEN_EXPIRED,
+          "Session token expired",
+        );
+      }
+
+      await c.var.db
         .update(sessions)
         .set({
           lastActiveAt: new Date(),
         })
-        .where(eq(sessions.id, sessionId));
+        .where(and(eq(sessions.id, sessionId), eq(sessions.isRevoked, false)));
 
-      return session.userId;
-    });
-    if (!userId) return sendUnauthorized(c);
+      c.set("userId", session.userId);
+      c.set("sessionId", sessionId);
 
-    c.set("userId", userId);
-    c.set("sessionId", sessionId);
-
-    await next();
+      await next();
+    } catch (error) {
+      attachRequestId(c.get("requestId")).error((error as Error).message);
+      return sendUnexpected(c);
+    }
   });
