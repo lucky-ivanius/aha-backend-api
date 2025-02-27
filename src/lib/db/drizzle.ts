@@ -25,7 +25,7 @@ const checkConnection = async () => {
   } catch (error) {
     delete (error as Error).stack;
 
-    logger.error(error);
+    logger.error(`Database connection failed`, error);
     process.exit(1);
   }
 };
