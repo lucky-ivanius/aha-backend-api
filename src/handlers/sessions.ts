@@ -44,7 +44,7 @@ sessionHandlers
             gte(sessions.expiresAt, new Date()),
           ),
         )
-        .orderBy(desc(sessions.lastActiveAt));
+        .orderBy(desc(sessions.id));
 
       return sendOk(
         c,
