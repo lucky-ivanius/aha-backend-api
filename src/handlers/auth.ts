@@ -10,6 +10,7 @@ import schema from "../lib/db/schema/drizzle";
 import { attachRequestId } from "../utils/logger";
 import {
   errors,
+  sendNoContent,
   sendOk,
   sendUnauthorized,
   sendUnexpected,
@@ -255,7 +256,7 @@ authHandlers
 
       deleteSessionCookie(c);
 
-      return sendOk(c);
+      return sendNoContent(c);
     } catch (error) {
       attachRequestId(c.get("requestId")).error((error as Error).message);
       return sendUnexpected(c);
