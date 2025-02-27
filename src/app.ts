@@ -1,3 +1,4 @@
+import { swaggerUI } from "@hono/swagger-ui";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { prettyJSON } from "hono/pretty-json";
@@ -12,12 +13,15 @@ import db from "./lib/db/drizzle";
 import { AHA_REQUEST_ID } from "./config/consts";
 import env from "./config/env";
 
+import openapi from "./docs/openapi.json";
+
 import { attachRequestId } from "./utils/logger";
 import {
   errors,
   sendBadRequest,
   sendForbidden,
   sendNotFound,
+  sendOk,
   sendUnauthorized,
   sendUnexpected,
 } from "./utils/response";
@@ -38,13 +42,14 @@ declare module "hono" {
 
 app
   .use(
-    cors({
-      origin: env.ORIGINS,
+    requestId({
+      headerName: AHA_REQUEST_ID,
     }),
   )
   .use(
-    requestId({
-      headerName: AHA_REQUEST_ID,
+    cors({
+      origin:
+        env.NODE_ENV === "production" && env.ORIGINS.length ? env.ORIGINS : "*",
     }),
   )
   .use(secureHeaders())
@@ -87,5 +92,18 @@ app
       `${c.req.method} ${c.req.path} was not found`,
     );
   });
+
+if (env.NODE_ENV === "development") {
+  app
+    .get(
+      "/docs",
+      swaggerUI({
+        url: "/docs/openapi.json",
+      }),
+    )
+    .get("/docs/openapi.json", async (c) => {
+      return sendOk(c, openapi);
+    });
+}
 
 export default app;
