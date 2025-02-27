@@ -27,6 +27,9 @@ const password = (name: string) =>
     .min(8, {
       message: `${name} must be at least 8 characters`,
     })
+    .max(64, {
+      message: `${name} must be at most 64 characters`,
+    })
     .regex(passwordRegex, {
       message: `${name} must contain at least one uppercase letter, one lowercase letter, one number, and one special character`,
     });
