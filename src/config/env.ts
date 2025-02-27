@@ -13,7 +13,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().min(0).max(65535).default(3000),
   ORIGINS: z
     .string()
-    .default("*")
+    .default("")
     .transform((value) => value.split(",").map((item) => item.trim())),
   JWT_SECRET_KEY: z.string(),
   MAX_USER_ACTIVE_SESSIONS: z.coerce.number().min(1).default(10),
