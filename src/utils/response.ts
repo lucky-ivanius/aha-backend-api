@@ -42,7 +42,7 @@ function errorResponse(
 export function sendBadRequest(
   c: Context,
   error: string = errors.BAD_REQUEST_ERROR,
-  message: string = "Bad request",
+  message: string = "Invalid request parameters",
 ): Response {
   return errorResponse(c, 400, error, message);
 }
@@ -58,7 +58,7 @@ export function sendUnauthorized(
 export function sendForbidden(
   c: Context,
   error: string = errors.FORBIDDEN_ERROR,
-  message: string = "Forbidden",
+  message: string = "Access denied",
 ): Response {
   return errorResponse(c, 403, error, message);
 }
