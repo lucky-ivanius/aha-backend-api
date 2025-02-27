@@ -15,7 +15,6 @@ const envSchema = z.object({
     .string()
     .default("")
     .transform((value) => value.split(",").map((item) => item.trim())),
-  JWT_SECRET_KEY: z.string(),
   MAX_USER_ACTIVE_SESSIONS: z.coerce.number().min(1).default(10),
   // Database
   PG_DATABASE_URL: z.string().url(),
