@@ -1,7 +1,9 @@
 import { getConnInfo } from "@hono/node-server/conninfo";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq, gte } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
+
+import env from "../config/env";
 
 import schema from "../lib/db/schema/drizzle";
 
@@ -124,6 +126,41 @@ authHandlers
                 .execute();
               if (!createdSession) return tx.rollback();
 
+              const now = new Date();
+
+              const usersActiveSessions = await tx.$count(
+                sessions,
+                and(
+                  eq(sessions.userId, createdUser.id),
+                  eq(sessions.isRevoked, false),
+                  gte(sessions.expiresAt, now),
+                ),
+              );
+              if (usersActiveSessions > env.MAX_USER_ACTIVE_SESSIONS) {
+                const [oldestSession] = await tx
+                  .select({
+                    id: sessions.id,
+                  })
+                  .from(sessions)
+                  .where(
+                    and(
+                      eq(sessions.userId, createdUser.id),
+                      eq(sessions.isRevoked, false),
+                      gte(sessions.expiresAt, now),
+                    ),
+                  )
+                  .orderBy(asc(sessions.lastActiveAt))
+                  .limit(1);
+                if (oldestSession) {
+                  await tx
+                    .update(sessions)
+                    .set({
+                      isRevoked: true,
+                    })
+                    .where(eq(sessions.id, oldestSession.id));
+                }
+              }
+
               return {
                 createdUser,
                 createdSession,
@@ -139,22 +176,65 @@ authHandlers
           });
         }
 
-        const [session] = await c.var.db
-          .insert(sessions)
-          .values({
-            expiresAt,
-            userId: existingUser.id,
-            ipAddress: connInfo.remote.address ?? "0.0.0.0",
-            userAgent: userAgent,
-          })
-          .returning({
-            id: sessions.id,
-          })
-          .execute();
+        const createdSession = await c.var.db.transaction(async (tx) => {
+          const [createdSession] = await tx
+            .insert(sessions)
+            .values({
+              expiresAt,
+              userId: existingUser.id,
+              ipAddress: connInfo.remote.address ?? "0.0.0.0",
+              userAgent: userAgent,
+            })
+            .returning({
+              id: sessions.id,
+            })
+            .execute();
+          if (!createdSession) return tx.rollback();
 
-        setSessionCookie(c, session.id);
+          const now = new Date();
 
-        return sendOk(c, { userId: existingUser.id, sessionToken: session.id });
+          const usersActiveSessions = await tx.$count(
+            sessions,
+            and(
+              eq(sessions.userId, existingUser.id),
+              eq(sessions.isRevoked, false),
+              gte(sessions.expiresAt, now),
+            ),
+          );
+          if (usersActiveSessions > env.MAX_USER_ACTIVE_SESSIONS) {
+            const [oldestSession] = await tx
+              .select({
+                id: sessions.id,
+              })
+              .from(sessions)
+              .where(
+                and(
+                  eq(sessions.userId, existingUser.id),
+                  eq(sessions.isRevoked, false),
+                  gte(sessions.expiresAt, now),
+                ),
+              )
+              .orderBy(asc(sessions.lastActiveAt))
+              .limit(1);
+            if (oldestSession) {
+              await tx
+                .update(sessions)
+                .set({
+                  isRevoked: true,
+                })
+                .where(eq(sessions.id, oldestSession.id));
+            }
+          }
+
+          return createdSession;
+        });
+
+        setSessionCookie(c, createdSession.id);
+
+        return sendOk(c, {
+          userId: existingUser.id,
+          sessionToken: createdSession.id,
+        });
       } catch (error) {
         attachRequestId(c.get("requestId")).error((error as Error).message);
         return sendUnexpected(c);
