@@ -7,7 +7,14 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
+  LOG_LEVEL: z
+    .enum(["error", "warn", "info", "verbose", "debug", "silly"])
+    .default("info"),
   PORT: z.coerce.number().min(0).max(65535).default(3000),
+  ORIGINS: z
+    .string()
+    .default("*")
+    .transform((value) => value.split(",").map((item) => item.trim())),
   JWT_SECRET_KEY: z.string(),
   // Database
   PG_DATABASE_URL: z.string().url(),
