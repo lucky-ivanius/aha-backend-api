@@ -38,7 +38,6 @@ sessionHandlers
           lastActiveAt: sessions.lastActiveAt,
           loginDate: sessions.createdAt,
           expiresAt: sessions.expiresAt,
-          isRevoked: sessions.isRevoked,
         })
         .from(sessions)
         .where(
