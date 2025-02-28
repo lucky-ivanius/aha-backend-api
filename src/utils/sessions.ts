@@ -14,7 +14,7 @@ export const setSessionCookie = (
   expiresAt: Date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 ) => {
   setCookie(c, SESSION_HEADER, sessionId, {
-    sameSite: "lax",
+    sameSite: env.NODE_ENV === "production" ? "none" : "lax",
     httpOnly: true,
     secure: env.NODE_ENV === "production",
     expires: expiresAt,
