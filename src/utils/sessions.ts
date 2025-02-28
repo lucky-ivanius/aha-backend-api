@@ -13,9 +13,10 @@ export const setSessionCookie = (
   expiresAt: Date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 ) => {
   setCookie(c, SESSION_HEADER, sessionId, {
-    sameSite: "none",
+    sameSite: "lax",
     httpOnly: true,
     secure: true,
+    path: "/",
     expires: expiresAt,
   });
 };
