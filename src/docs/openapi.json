@@ -7,8 +7,24 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000/api",
+      "url": "http://localhost:{port}/api",
+      "variables": {
+        "port": {
+          "default": "3000",
+          "description": "Port number"
+        }
+      },
       "description": "Local development server"
+    },
+    {
+      "url": "{url}/api",
+      "variables": {
+        "url": {
+          "default": "https://URL_ADDRESS",
+          "description": "Base URL for the API"
+        }
+      },
+      "description": "Custom server URL"
     }
   ],
   "tags": [
@@ -34,7 +50,7 @@
       "cookieAuth": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "sid",
+        "name": "aha_sid",
         "description": "Session token received from /auth/signin"
       },
       "bearerAuth": {
@@ -112,26 +128,23 @@
             "type": "string",
             "format": "uuid"
           },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
+          "loginDate": {
+            "type": "number",
+            "format": "int64"
           },
           "lastActiveAt": {
-            "type": "string",
-            "format": "date-time"
+            "type": "number",
+            "format": "int64"
           },
           "expiresAt": {
-            "type": "string",
-            "format": "date-time"
+            "type": "number",
+            "format": "int64"
           },
           "ipAddress": {
             "type": "string"
           },
           "userAgent": {
             "type": "string"
-          },
-          "isRevoked": {
-            "type": "boolean"
           }
         }
       },
