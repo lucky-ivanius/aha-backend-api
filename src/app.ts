@@ -1,7 +1,6 @@
 import { swaggerUI } from "@hono/swagger-ui";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { getConnInfo } from "@hono/node-server/conninfo";
 import { prettyJSON } from "hono/pretty-json";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
@@ -26,6 +25,7 @@ import {
   sendUnauthorized,
   sendUnexpected,
 } from "./utils/response";
+import { getIpAddress } from "./utils/ip";
 
 import { loggerMiddleware } from "./middlewares/logger";
 import { rateLimitMiddleware } from "./middlewares/rate-limiter";
@@ -88,24 +88,12 @@ app
       windowMs: env.PUBLIC_RATE_LIMIT_WINDOW_MS,
       limit: env.PUBLIC_RATE_LIMIT_MAX_REQUESTS,
       keyGenerator: (c) => {
-        const key =
-          c.req.header("x-forwarded-for") ??
-          getConnInfo(c).remote.address ??
-          "global";
+        const key = getIpAddress(c) ?? "global";
 
         return key;
       },
     }),
   )
-  .get(
-    "/docs",
-    swaggerUI({
-      url: "/docs/openapi.json",
-    }),
-  )
-  .get("/docs/openapi.json", async (c) => {
-    return sendOk(c, openapi);
-  })
   .basePath("/api")
   .route("/auth", authHandlers)
   .route("/users", userHandlers)
@@ -117,5 +105,18 @@ app
       `${c.req.method} ${c.req.path} was not found`,
     );
   });
+
+if (env.NODE_ENV === "development") {
+  app
+    .get(
+      "/docs",
+      swaggerUI({
+        url: "/docs/openapi.json",
+      }),
+    )
+    .get("/docs/openapi.json", async (c) => {
+      return sendOk(c, openapi);
+    });
+}
 
 export default app;

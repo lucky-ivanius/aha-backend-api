@@ -2,9 +2,10 @@ import { Context, Env, Input } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
 import { createMiddleware } from "hono/factory";
 
-import { errors, sendTooManyRequests } from "../utils/response";
-import { getConnInfo } from "@hono/node-server/conninfo";
 import env from "../config/env";
+
+import { getIpAddress } from "../utils/ip";
+import { errors, sendTooManyRequests } from "../utils/response";
 
 export const DEFAULT_RATE_LIMITER_MESSAGE =
   "Too many requests, please try again later.";
@@ -52,6 +53,6 @@ export const protectedRouteRateLimitMiddleware = <
     keyGenerator: (c) =>
       c.get("userId") ||
       c.get("sessionId") ||
-      `${getConnInfo(c).remote.address}|${c.req.method}|${c.req.path}`,
+      `${getIpAddress(c)}|${c.req.method}|${c.req.path}`,
     ...config,
   });

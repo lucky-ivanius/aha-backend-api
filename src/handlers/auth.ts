@@ -1,4 +1,3 @@
-import { getConnInfo } from "@hono/node-server/conninfo";
 import { and, asc, eq, gte } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
@@ -20,6 +19,7 @@ import {
 } from "../utils/response";
 import { deleteSessionCookie, setSessionCookie } from "../utils/sessions";
 import { zodSchemaValidator } from "../utils/validator";
+import { getIpAddress } from "../utils/ip";
 
 import { sessionCookieMiddleware } from "../middlewares/auth";
 import {
@@ -53,7 +53,7 @@ authHandlers
     async (c) => {
       const { authorization: token } = c.req.valid("header");
       const userAgent = c.req.header("User-Agent");
-      const connInfo = getConnInfo(c);
+      const ipAddress = getIpAddress(c);
 
       try {
         const payload = await c.var.authProvider.verifyToken(token);
@@ -131,7 +131,7 @@ authHandlers
                 .values({
                   expiresAt,
                   userId: createdUser.id,
-                  ipAddress: connInfo.remote.address ?? "0.0.0.0",
+                  ipAddress: ipAddress ?? "0.0.0.0",
                   userAgent: userAgent,
                 })
                 .returning({
@@ -196,7 +196,7 @@ authHandlers
             .values({
               expiresAt,
               userId: existingUser.id,
-              ipAddress: connInfo.remote.address ?? "0.0.0.0",
+              ipAddress: ipAddress ?? "0.0.0.0",
               userAgent: userAgent,
             })
             .returning({
