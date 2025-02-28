@@ -97,6 +97,15 @@ app
       },
     }),
   )
+  .get(
+    "/docs",
+    swaggerUI({
+      url: "/docs/openapi.json",
+    }),
+  )
+  .get("/docs/openapi.json", async (c) => {
+    return sendOk(c, openapi);
+  })
   .basePath("/api")
   .route("/auth", authHandlers)
   .route("/users", userHandlers)
@@ -108,18 +117,5 @@ app
       `${c.req.method} ${c.req.path} was not found`,
     );
   });
-
-if (env.NODE_ENV === "development") {
-  app
-    .get(
-      "/docs",
-      swaggerUI({
-        url: "/docs/openapi.json",
-      }),
-    )
-    .get("/docs/openapi.json", async (c) => {
-      return sendOk(c, openapi);
-    });
-}
 
 export default app;
