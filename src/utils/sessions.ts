@@ -1,7 +1,6 @@
 import { Context } from "hono";
-import { setCookie, getCookie, deleteCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 
-import env from "../config/env";
 import { SESSION_HEADER } from "../config/consts";
 
 export const getSessionCookie = (c: Context) => {
