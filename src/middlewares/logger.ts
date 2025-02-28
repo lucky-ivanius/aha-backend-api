@@ -2,6 +2,7 @@ import { Env, Input } from "hono";
 import { createMiddleware } from "hono/factory";
 
 import { attachRequestId } from "../utils/logger";
+import { getConnInfo } from "@hono/node-server/conninfo";
 
 const colorStatus = (status: number) => {
   switch ((status / 100) | 0) {
@@ -26,7 +27,7 @@ export const loggerMiddleware = <
     const start = Date.now();
 
     attachRequestId(c.get("requestId")).info(
-      `--> ${c.req.method} ${c.req.path}`,
+      `--> ${c.req.method} ${c.req.path} - ${getConnInfo(c).remote.address}`,
     );
 
     await next();
