@@ -2,11 +2,10 @@ import { Context } from "hono";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
 
 import env from "../config/env";
-
-const SESSION_COOKIE_NAME = "sid";
+import { SESSION_HEADER } from "../config/consts";
 
 export const getSessionCookie = (c: Context) => {
-  return getCookie(c, SESSION_COOKIE_NAME);
+  return getCookie(c, SESSION_HEADER);
 };
 
 export const setSessionCookie = (
@@ -14,7 +13,7 @@ export const setSessionCookie = (
   sessionId: string,
   expiresAt: Date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 ) => {
-  setCookie(c, SESSION_COOKIE_NAME, sessionId, {
+  setCookie(c, SESSION_HEADER, sessionId, {
     sameSite: "lax",
     httpOnly: true,
     secure: env.NODE_ENV === "production",
@@ -23,5 +22,5 @@ export const setSessionCookie = (
 };
 
 export const deleteSessionCookie = (c: Context) => {
-  deleteCookie(c, SESSION_COOKIE_NAME);
+  deleteCookie(c, SESSION_HEADER);
 };

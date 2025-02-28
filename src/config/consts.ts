@@ -1,4 +1,5 @@
 export const AHA_REQUEST_ID = "aha-request-id";
+export const SESSION_HEADER = "aha_sid";
 
 export const INVALID_AUTH_TOKEN = "INVALID_AUTH_TOKEN";
 export const INVALID_CURRENT_PASSWORD = "INVALID_CURRENT_PASSWORD";
