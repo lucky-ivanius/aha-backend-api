@@ -48,8 +48,8 @@ app
   )
   .use(
     cors({
-      origin:
-        env.NODE_ENV === "production" && env.ORIGINS.length ? env.ORIGINS : "*",
+      origin: env.ORIGINS.length ? env.ORIGINS : "*",
+      credentials: true,
     }),
   )
   .use(secureHeaders())
