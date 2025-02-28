@@ -1,6 +1,7 @@
 import { swaggerUI } from "@hono/swagger-ui";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { getConnInfo } from "@hono/node-server/conninfo";
 import { prettyJSON } from "hono/pretty-json";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
@@ -27,6 +28,7 @@ import {
 } from "./utils/response";
 
 import { loggerMiddleware } from "./middlewares/logger";
+import { rateLimitMiddleware } from "./middlewares/rate-limiter";
 
 import authHandlers from "./handlers/auth";
 import sessionHandlers from "./handlers/sessions";
@@ -41,6 +43,12 @@ declare module "hono" {
 }
 
 app
+  .use(async (c, next) => {
+    c.set("db", db);
+    c.set("authProvider", clerkAuthProvider);
+
+    return next();
+  })
   .use(
     requestId({
       headerName: AHA_REQUEST_ID,
@@ -55,12 +63,6 @@ app
   .use(secureHeaders())
   .use(prettyJSON())
   .use(trimTrailingSlash())
-  .use(async (c, next) => {
-    c.set("db", db);
-    c.set("authProvider", clerkAuthProvider);
-
-    return next();
-  })
   .use(loggerMiddleware())
   .onError((err, c) => {
     const logger = attachRequestId(c.get("requestId"));
@@ -81,6 +83,20 @@ app
     logger.error(err);
     return sendUnexpected(c);
   })
+  .use(
+    rateLimitMiddleware({
+      windowMs: env.PUBLIC_RATE_LIMIT_WINDOW_MS,
+      limit: env.PUBLIC_RATE_LIMIT_MAX_REQUESTS,
+      keyGenerator: (c) => {
+        const key =
+          c.req.header("x-forwarded-for") ??
+          getConnInfo(c).remote.address ??
+          "global";
+
+        return key;
+      },
+    }),
+  )
   .basePath("/api")
   .route("/auth", authHandlers)
   .route("/users", userHandlers)

@@ -16,6 +16,10 @@ const envSchema = z.object({
     .default("")
     .transform((value) => value.split(",").map((item) => item.trim())),
   MAX_USER_ACTIVE_SESSIONS: z.coerce.number().min(1).default(10),
+  PUBLIC_RATE_LIMIT_WINDOW_MS: z.coerce.number().min(1).default(10000),
+  PUBLIC_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().min(1).default(50),
+  PRIVATE_RATE_LIMIT_WINDOW_MS: z.coerce.number().min(1).default(2000),
+  PRIVATE_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().min(1).default(20),
   // Database
   PG_DATABASE_URL: z.string().url(),
   // 3rd party services

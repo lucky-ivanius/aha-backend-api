@@ -22,6 +22,10 @@ import { deleteSessionCookie, setSessionCookie } from "../utils/sessions";
 import { zodSchemaValidator } from "../utils/validator";
 
 import { sessionCookieMiddleware } from "../middlewares/auth";
+import {
+  protectedRouteRateLimitMiddleware,
+  rateLimitMiddleware,
+} from "../middlewares/rate-limiter";
 
 import { AuthProvider } from "../interfaces/auth-provider";
 import { bearerAuthHeaderSchema } from "../validations/auth";
@@ -40,6 +44,12 @@ authHandlers
   .post(
     "/signin",
     validator("header", zodSchemaValidator(bearerAuthHeaderSchema)),
+    async (c, next) =>
+      rateLimitMiddleware({
+        windowMs: 1000,
+        limit: 10,
+        keyGenerator: (_c) => c.req.valid("header").authorization,
+      })(c, next),
     async (c) => {
       const { authorization: token } = c.req.valid("header");
       const userAgent = c.req.header("User-Agent");
@@ -245,33 +255,38 @@ authHandlers
       }
     },
   )
-  .post("/signout", sessionCookieMiddleware(), async (c) => {
-    const sessionId = c.get("sessionId");
-    if (!sessionId) {
-      deleteSessionCookie(c);
+  .post(
+    "/signout",
+    sessionCookieMiddleware(),
+    protectedRouteRateLimitMiddleware(),
+    async (c) => {
+      const sessionId = c.get("sessionId");
+      if (!sessionId) {
+        deleteSessionCookie(c);
 
-      return sendUnauthorized(
-        c,
-        SESSION_TOKEN_NOT_PROVIDED,
-        "No session token provided",
-      );
-    }
+        return sendUnauthorized(
+          c,
+          SESSION_TOKEN_NOT_PROVIDED,
+          "No session token provided",
+        );
+      }
 
-    try {
-      await c.var.db
-        .update(sessions)
-        .set({
-          isRevoked: true,
-        })
-        .where(eq(sessions.id, sessionId));
+      try {
+        await c.var.db
+          .update(sessions)
+          .set({
+            isRevoked: true,
+          })
+          .where(eq(sessions.id, sessionId));
 
-      deleteSessionCookie(c);
+        deleteSessionCookie(c);
 
-      return sendNoContent(c);
-    } catch (error) {
-      attachRequestId(c.get("requestId")).error((error as Error).message);
-      return sendUnexpected(c);
-    }
-  });
+        return sendNoContent(c);
+      } catch (error) {
+        attachRequestId(c.get("requestId")).error((error as Error).message);
+        return sendUnexpected(c);
+      }
+    },
+  );
 
 export default authHandlers;
