@@ -5,8 +5,8 @@ export const updateUserSchema = z.object({
     .string({
       invalid_type_error: "Name must be a string",
     })
-    .min(3, {
-      message: "Name must be at least 3 characters",
+    .min(2, {
+      message: "Name must be at least 2 characters",
     })
     .max(64, {
       message: "Name must be at most 64 characters",
