@@ -4,6 +4,7 @@ import { z } from "zod";
 config();
 
 const envSchema = z.object({
+  TZ: z.string().default("UTC"),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),

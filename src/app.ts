@@ -83,6 +83,12 @@ app
     logger.error(err);
     return sendUnexpected(c);
   })
+  .get("/", async (c) => {
+    return sendOk(c, {
+      timestamp: Date.now(),
+      timezone: env.TZ,
+    });
+  })
   .use(
     rateLimitMiddleware({
       windowMs: env.PUBLIC_RATE_LIMIT_WINDOW_MS,
