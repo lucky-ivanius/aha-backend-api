@@ -15,6 +15,11 @@ const envSchema = z.object({
     .string()
     .default("")
     .transform((value) => value.split(",").map((item) => item.trim())),
+  SESSION_EXPIRATION_TIME: z.coerce
+    .number()
+    .min(1000 * 60 * 5) // 5 minutes
+    .max(1000 * 60 * 60 * 24 * 365) // 1 year
+    .default(1000 * 60 * 60 * 24 * 7), // 1 week
   MAX_USER_ACTIVE_SESSIONS: z.coerce.number().min(1).default(10),
   PUBLIC_RATE_LIMIT_WINDOW_MS: z.coerce.number().min(1).default(10000),
   PUBLIC_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().min(1).default(50),

@@ -79,7 +79,7 @@ authHandlers
             ),
           );
 
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        const expiresAt = new Date(env.SESSION_EXPIRATION_TIME);
 
         if (!existingUser) {
           const providerUser =
@@ -182,7 +182,7 @@ authHandlers
             },
           );
 
-          setSessionCookie(c, createdSession.id);
+          setSessionCookie(c, createdSession.id, expiresAt);
 
           return sendOk(c, {
             userId: createdUser.id,
@@ -243,7 +243,7 @@ authHandlers
           return createdSession;
         });
 
-        setSessionCookie(c, createdSession.id);
+        setSessionCookie(c, createdSession.id, expiresAt);
 
         return sendOk(c, {
           userId: existingUser.id,
