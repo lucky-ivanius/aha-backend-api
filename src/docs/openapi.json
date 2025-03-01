@@ -145,6 +145,9 @@
           },
           "userAgent": {
             "type": "string"
+          },
+          "isCurrentSession": {
+            "type": "boolean"
           }
         }
       },

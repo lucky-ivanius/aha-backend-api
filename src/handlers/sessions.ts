@@ -43,6 +43,7 @@ sessionHandlers
             lastActiveAt: sessions.lastActiveAt,
             loginDate: sessions.createdAt,
             expiresAt: sessions.expiresAt,
+            isCurrentSession: eq(sessions.id, c.get("sessionId") ?? ""),
           })
           .from(sessions)
           .where(
