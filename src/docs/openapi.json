@@ -7,6 +7,16 @@
   },
   "servers": [
     {
+      "url": "{base_url}/api",
+      "variables": {
+        "base_url": {
+          "default": "https://URL_ADDRESS",
+          "description": "Base URL for the API"
+        }
+      },
+      "description": "Custom server URL"
+    },
+    {
       "url": "http://localhost:{port}/api",
       "variables": {
         "port": {
@@ -15,16 +25,6 @@
         }
       },
       "description": "Local development server"
-    },
-    {
-      "url": "{url}/api",
-      "variables": {
-        "url": {
-          "default": "https://URL_ADDRESS",
-          "description": "Base URL for the API"
-        }
-      },
-      "description": "Custom server URL"
     }
   ],
   "tags": [
