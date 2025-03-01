@@ -79,7 +79,7 @@ authHandlers
             ),
           );
 
-        const expiresAt = new Date(env.SESSION_EXPIRATION_TIME);
+        const expiresAt = new Date(Date.now() + env.SESSION_EXPIRATION_TIME);
 
         if (!existingUser) {
           const providerUser =
