@@ -4,16 +4,13 @@ import { z } from "zod";
 config();
 
 const envSchema = z.object({
-  TZ: z
-    .string()
-    .default("UTC")
-    .refine((value) => {
-      const isValidTz = Intl.DateTimeFormat()
-        .resolvedOptions()
-        .timeZone.includes(value);
+  TZ: z.string().transform((value) => {
+    const isValidTz = Intl.DateTimeFormat()
+      .resolvedOptions()
+      .timeZone.includes(value);
 
-      return isValidTz ? value : "UTC";
-    }),
+    return isValidTz ? value : "UTC";
+  }),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
