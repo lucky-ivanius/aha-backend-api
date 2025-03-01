@@ -10,7 +10,7 @@
       "url": "{base_url}/api",
       "variables": {
         "base_url": {
-          "default": "https://URL_ADDRESS",
+          "default": "",
           "description": "Base URL for the API"
         }
       },
