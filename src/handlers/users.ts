@@ -25,6 +25,7 @@ import { zodSchemaValidator } from "../utils/validator";
 
 import {
   changePasswordSchema,
+  getUsersQuerySchema,
   setPasswordSchema,
   updateUserSchema,
 } from "../validations/users";
@@ -38,31 +39,51 @@ userHandlers
     "/",
     sessionCookieMiddleware(),
     protectedRouteRateLimitMiddleware(),
+    validator("query", zodSchemaValidator(getUsersQuerySchema)),
     async (c) => {
-      try {
-        const userList = await c.var.db
-          .select({
-            id: users.id,
-            name: users.name,
-            registrationDate: users.createdAt,
-            totalLoginCount: count(sessions.id),
-            lastActiveTimestamp: max(sessions.lastActiveAt),
-          })
-          .from(users)
-          .leftJoin(sessions, eq(sessions.userId, users.id))
-          .groupBy(users.id)
-          .orderBy(desc(users.createdAt));
+      const { page, limit } = c.req.valid("query");
 
-        return sendOk(
-          c,
-          userList.map((user) => ({
+      try {
+        const { userList, usersCount } = await c.var.db.transaction(
+          async (tx) => {
+            const userList = await tx
+              .select({
+                id: users.id,
+                name: users.name,
+                registrationDate: users.createdAt,
+                totalLoginCount: count(sessions.id),
+                lastActiveTimestamp: max(sessions.lastActiveAt),
+              })
+              .from(users)
+              .leftJoin(sessions, eq(sessions.userId, users.id))
+              .offset((page - 1) * limit)
+              .limit(limit)
+              .groupBy(users.id)
+              .orderBy(desc(users.createdAt));
+
+            const [{ total: usersCount }] = await tx
+              .select({
+                total: count(users.id),
+              })
+              .from(users);
+
+            return {
+              userList,
+              usersCount,
+            };
+          },
+        );
+
+        return sendOk(c, {
+          data: userList.map((user) => ({
             ...user,
             lastActiveTimestamp: user.lastActiveTimestamp
               ? +user.lastActiveTimestamp
               : null,
             registrationDate: +user.registrationDate,
           })),
-        );
+          total: usersCount,
+        });
       } catch (error) {
         attachRequestId(c.get("requestId")).error((error as Error).message);
         return sendUnexpected(c);
