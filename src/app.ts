@@ -15,6 +15,7 @@ import env from "./config/env";
 
 import openapi from "./docs/openapi.json";
 
+import { getIpAddress } from "./utils/ip";
 import { attachRequestId } from "./utils/logger";
 import {
   errors,
@@ -25,7 +26,6 @@ import {
   sendUnauthorized,
   sendUnexpected,
 } from "./utils/response";
-import { getIpAddress } from "./utils/ip";
 
 import { loggerMiddleware } from "./middlewares/logger";
 import { rateLimitMiddleware } from "./middlewares/rate-limiter";
@@ -103,14 +103,7 @@ app
   })
   .route("/auth", authHandlers)
   .route("/users", userHandlers)
-  .route("/sessions", sessionHandlers)
-  .all("*", async (c) => {
-    return sendNotFound(
-      c,
-      errors.NOT_FOUND_ERROR,
-      `${c.req.method} ${c.req.path} was not found`,
-    );
-  });
+  .route("/sessions", sessionHandlers);
 
 if (env.NODE_ENV === "development") {
   app
@@ -118,11 +111,21 @@ if (env.NODE_ENV === "development") {
       "/docs",
       swaggerUI({
         url: "/docs/openapi.json",
+        withCredentials: true,
+        persistAuthorization: true,
       }),
     )
     .get("/docs/openapi.json", async (c) => {
       return sendOk(c, openapi);
     });
 }
+
+app.all("*", async (c) => {
+  return sendNotFound(
+    c,
+    errors.NOT_FOUND_ERROR,
+    `${c.req.method} ${c.req.path} was not found`,
+  );
+});
 
 export default app;
