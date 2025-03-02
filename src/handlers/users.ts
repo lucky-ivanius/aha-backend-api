@@ -171,7 +171,7 @@ userHandlers
                 and(
                   eq(sessions.isRevoked, false),
                   gte(sessions.expiresAt, now),
-                  gte(sessions.createdAt, startOfToday),
+                  gte(sessions.lastActiveAt, startOfToday),
                 ),
               );
 
@@ -188,7 +188,7 @@ userHandlers
                 and(
                   eq(sessions.isRevoked, false),
                   gte(sessions.expiresAt, now),
-                  gte(sessions.createdAt, sevenDaysAgo),
+                  gte(sessions.lastActiveAt, sevenDaysAgo),
                 ),
               );
 
